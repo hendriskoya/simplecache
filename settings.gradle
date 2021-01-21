@@ -1,0 +1,6 @@
+rootProject.name = 'simplecache'
+include 'monitor'
+include 'server'
+include 'common'
+include 'client'
+
