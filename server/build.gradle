@@ -21,6 +21,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/io.fabric8/kubernetes-client
     compile 'io.kubernetes:client-java:10.0.0'
+    
+    compile 'org.ehcache:ehcache:3.8.1'
+//    compile 'javax.cache:'
 
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'

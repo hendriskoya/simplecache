@@ -1,4 +1,4 @@
-package org.simplecache.handler;
+package org.simplecache.handler.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
@@ -6,25 +6,25 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
-import org.simplecache.cache.Cache;
+import org.simplecache.ConnectionManager;
+import org.simplecache.cache.SimpleCache;
 import org.simplecache.Packet;
 import org.simplecache.cache.MessageQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // ClientHandler class
 public class ClientHandler implements Runnable {
 
-    DateFormat fordate = new SimpleDateFormat("yyyy/MM/dd");
-    DateFormat fortime = new SimpleDateFormat("hh:mm:ss");
+    private final Logger LOG = LoggerFactory.getLogger(ClientHandler.class);
 
     private final Socket socket;
     private final DataInputStream dis;
     private final DataOutputStream dos;
     private final MessageQueue messageQueue;
+//    private ConnectionManager connectionManager;
 
     // Constructor
     public ClientHandler(Socket socket, DataInputStream dis, DataOutputStream dos, MessageQueue messageQueue) {
@@ -34,25 +34,30 @@ public class ClientHandler implements Runnable {
         this.messageQueue = messageQueue;
     }
 
+    /*public void setConnectionManager(ConnectionManager connectionManager) {
+        this.connectionManager = connectionManager;
+    }*/
+
     @Override
     public void run() {
         String received;
-        String toreturn;
+//        String toreturn;
+
         while (true) {
             try {
 
                 // Ask user what he wants
-                dos.writeUTF("What do you want?[Date | Time]..\n" +
-                        "Type Exit to terminate connection.");
+                /*dos.writeUTF("What do you want?[Date | Time]..\n" +
+                        "Type Exit to terminate connection.");*/
 
                 // receive the answer from client
                 received = dis.readUTF();
 
                 if (received.equals("Exit")) {
                     System.out.println("Client " + this.socket + " sends exit...");
-                    System.out.println("Closing this connection.");
-                    this.socket.close();
-                    System.out.println("Connection closed");
+//                    System.out.println("Closing this connection.");
+//                    this.socket.close();
+//                    System.out.println("Connection closed");
                     break;
                 }
 
@@ -61,7 +66,7 @@ public class ClientHandler implements Runnable {
                     process(packet.get());
                 } else {
                     // creating Date object
-                    Date date = new Date();
+                    /*Date date = new Date();
 
                     // write on output stream based on the
                     // answer from the client
@@ -80,25 +85,33 @@ public class ClientHandler implements Runnable {
                         default:
                             dos.writeUTF("Invalid input");
                             break;
-                    }
+                    }*/
                 }
             } catch (SocketException e) {
                 e.printStackTrace();
-                System.out.println("Provavelmente a conexão com o client foi perdida");
+                LOG.info("Provavelmente a conexão com o client foi perdida");
                 break;
             } catch (IOException e) {
                 e.printStackTrace();
+                LOG.info("Provavelmente a conexão com o client foi perdida ou encerrada");
+                break;
             }
         }
 
         try {
-            // closing resources
-            this.dis.close();
-            this.dos.close();
-
+            close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void close() throws IOException {
+        // closing resources
+        this.dos.close();
+        this.dis.close();
+        System.out.println("Closing this connection.");
+        this.socket.close();
+        System.out.println("Connection closed");
     }
 
     private void process(Packet packet) throws IOException {
@@ -128,7 +141,7 @@ public class ClientHandler implements Runnable {
 
     private String processGet(Map<String, String> attributes) {
         String key = attributes.get("key");
-        String value = Cache.INSTANCE.get(key);
+        String value = SimpleCache.INSTANCE.get(key);
         return value;
     }
 
@@ -136,12 +149,12 @@ public class ClientHandler implements Runnable {
         String key = attributes.get("key");
         String value = attributes.get("value");
 
-        Cache.INSTANCE.set(key, value);
+        SimpleCache.INSTANCE.set(key, value);
 
         messageQueue.offer(key + "=" + value);
     }
 
     public Optional<Packet> toPacket(String received) {
-        return Packet.from(received);
+        return Packet.fromJson(received);
     }
 }

@@ -3,4 +3,5 @@ include 'monitor'
 include 'server'
 include 'common'
 include 'client'
+include 'client-web'
 

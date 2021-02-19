@@ -1,18 +1,12 @@
-package org.simplecache.handler;
+package org.simplecache.handler.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Map;
 import java.util.Optional;
-import org.simplecache.cache.Cache;
-import org.simplecache.ClientManager;
+import org.simplecache.ConnectionManager;
 import org.simplecache.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,14 +18,14 @@ public class MonitorHandler implements Runnable {
     private final DataInputStream dis;
     private final DataOutputStream dos;
     private final Socket socket;
-    private final ClientManager clientManager;
+    private final ConnectionManager connectionManager;
 
-    public MonitorHandler(Socket socket, DataInputStream dis, DataOutputStream dos, ClientManager clientManager) {
+    public MonitorHandler(Socket socket, DataInputStream dis, DataOutputStream dos, ConnectionManager connectionManager) {
         LOG.info("Establishing a monitor connection...");
         this.socket = socket;
         this.dis = dis;
         this.dos = dos;
-        this.clientManager = clientManager;
+        this.connectionManager = connectionManager;
     }
 
     @Override
@@ -46,7 +40,7 @@ public class MonitorHandler implements Runnable {
 
                 LOG.info("Received: {}", received);
 
-                Optional<Packet> packet = Packet.from(received);
+                Optional<Packet> packet = Packet.fromJson(received);
                 if (packet.isPresent()) {
                     process(packet.get());
                 }
@@ -77,16 +71,20 @@ public class MonitorHandler implements Runnable {
                 LOG.info("ADD " + packet);
 //                processSet(packet.getAttributes());
                 dos.writeUTF("ok");
-                clientManager.newClient(packet.getAttributes().get("instance"));
+                connectionManager.newClient(packet.getAttributes().get("hostname"), packet.getAttributes().get("ip"));
                 break;
             case "REMOVE":
                 LOG.info("REMOVE " + packet);
                 dos.writeUTF("ok");
-                clientManager.stop(packet.getAttributes().get("instance"));
+                connectionManager.stop(packet.getAttributes().get("hostname"), packet.getAttributes().get("ip"));
                 break;
             default:
                 dos.writeUTF("Invalid input");
                 break;
         }
+    }
+
+    public boolean isConnected() {
+        return socket.isConnected();
     }
 }

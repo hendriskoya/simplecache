@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: simplecache
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       labels:
@@ -25,6 +25,13 @@ spec:
               memory: "256Mi"
           ports:
             - containerPort: 5959
+          env:
+            - name: JAVA_OPTS
+              value: '-Djdk.tls.client.protocols=TLSv1.2'
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
         - name: proxycontainer
           image: k8s-api-proxy:latest
           imagePullPolicy: Never
@@ -49,5 +56,9 @@ spec:
           env:
             - name: JAVA_OPTS
               value: '-Xms128m -Xmx256m -XX:MaxMetaspaceSize=64m -Djdk.tls.client.protocols=TLSv1.2'
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           ports:
             - containerPort: 5959

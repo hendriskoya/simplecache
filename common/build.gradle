@@ -12,6 +12,9 @@ repositories {
 }
 
 dependencies {
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+    implementation('org.slf4j:slf4j-simple:1.7.30')
+
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.0'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'

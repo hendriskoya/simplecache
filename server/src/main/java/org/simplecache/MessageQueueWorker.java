@@ -4,11 +4,11 @@ import org.simplecache.cache.MessageQueue;
 
 public class MessageQueueWorker implements Runnable {
 
-    private final ServersThread serversThread;
+    private final ConnectionManager connectionManager;
     private final MessageQueue messageQueue;
 
-    public MessageQueueWorker(ServersThread serversThread, MessageQueue messageQueue) {
-        this.serversThread = serversThread;
+    public MessageQueueWorker(ConnectionManager connectionManager, MessageQueue messageQueue) {
+        this.connectionManager = connectionManager;
         this.messageQueue = messageQueue;
     }
 
@@ -18,7 +18,7 @@ public class MessageQueueWorker implements Runnable {
             try {
                 String message = messageQueue.take();
 
-                serversThread.get().forEach(serverHandler -> serverHandler.publish(message));
+                connectionManager.nodes().forEach(serverHandler -> serverHandler.publish(message));
 
             } catch (InterruptedException e) {
                 e.printStackTrace();

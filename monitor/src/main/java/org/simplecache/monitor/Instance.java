@@ -8,28 +8,28 @@ public class Instance {
 
     private static final Logger LOG = LoggerFactory.getLogger(Instance.class);
 
-    private final String name;
+    private final String hostname;
     private String ip;
     private String status;
     private final boolean isLocalhost;
-    private static Optional<String> hostname;
+    private static final Optional<String> monitorHostname;
 
     static {
-        hostname = Optional.ofNullable(System.getenv("HOSTNAME"));
-        if (hostname.isEmpty()) {
+        monitorHostname = Optional.ofNullable(System.getenv("HOSTNAME"));
+        if (monitorHostname.isEmpty()) {
             LOG.error("Environment variable HOSTNAME is null");
         }
     }
 
-    public Instance(String name, String ip, String status) {
-        this.name = name;
+    public Instance(String hostname, String ip, String status) {
+        this.hostname = hostname;
         this.ip = ip;
         this.status = status;
-        this.isLocalhost = hostname.isEmpty() ? false : hostname.get().equalsIgnoreCase(name);
+        this.isLocalhost = monitorHostname.isEmpty() ? false : monitorHostname.get().equalsIgnoreCase(hostname);
     }
 
-    public String getName() {
-        return name;
+    public String getHostname() {
+        return hostname;
     }
 
     public String getIp() {
@@ -55,7 +55,7 @@ public class Instance {
     @Override
     public String toString() {
         return "Instance{" +
-                "name='" + name + '\'' +
+                "name='" + hostname + '\'' +
                 ", ip='" + ip + '\'' +
                 ", status='" + status + '\'' +
                 ", localhost='" + isLocalhost + '\'' +

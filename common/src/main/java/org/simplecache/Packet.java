@@ -32,7 +32,7 @@ public class Packet {
         this.attributes.put(key, value);
     }
 
-    public static Optional<Packet> from(String value) {
+    public static Optional<Packet> fromJson(String value) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             return Optional.of(objectMapper.readValue(value, Packet.class));

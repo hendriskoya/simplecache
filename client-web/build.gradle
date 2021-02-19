@@ -1,0 +1,60 @@
+buildscript {
+    ext {
+        springBootVersion = '2.2.2.RELEASE'
+        springCloudVersion = 'Hoxton.SR1'
+
+        apacheCommonsLang3 = '3.7'
+        swaggerVersion = '2.9.2'
+        lombokVersion = '1.18.4'
+        hibernateVersion = "5.4.10.Final"
+
+        h2DatabaseVersion = "1.4.194"
+
+        jacocoVersion = '0.8.2'
+        databaseMigrationPlugin = '0.2.5'
+        oraclePluginVersion = "12.1.0.2"
+
+        buildEncode = "UTF-8"
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'application'
+apply plugin: 'java'
+apply plugin: 'idea'
+
+group 'org.simplecache'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation('org.springframework.boot:spring-boot-starter-web')
+
+// https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+    /*compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.0'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'*/
+
+    compile(project(':common')) {
+        exclude group: 'org.slf4j'
+    }
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}

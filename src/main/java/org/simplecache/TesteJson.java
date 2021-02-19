@@ -8,7 +8,7 @@ import java.util.Map;
 public class TesteJson {
 
     public static void main(String[] args) throws JsonProcessingException {
-        Packet packet = new Packet();
+        /*Packet packet = new Packet();
 
         packet.setCommand("GET");
         packet.add("key", "name");
@@ -16,7 +16,7 @@ public class TesteJson {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String s = objectMapper.writeValueAsString(packet);
-        System.out.println(s);
+        System.out.println(s);*/
     }
 }
 
