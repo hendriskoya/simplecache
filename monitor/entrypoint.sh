@@ -4,6 +4,6 @@
 
 # kubectl proxy --port=8080
 
-nohup monitor/bin/monitor &
+nohup monitorWorker/bin/monitorWorker &
 
 kubectl proxy --port=8080

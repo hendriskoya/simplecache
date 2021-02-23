@@ -43,22 +43,22 @@ spec:
             limits:
               cpu: "200m"
               memory: "128Mi"
-        - name: monitor
-          image: monitor:latest
-          imagePullPolicy: Never
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
-          env:
-            - name: JAVA_OPTS
-              value: '-Xms128m -Xmx256m -XX:MaxMetaspaceSize=64m -Djdk.tls.client.protocols=TLSv1.2'
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-          ports:
-            - containerPort: 5959
+#        - name: monitor
+#          image: monitor:latest
+#          imagePullPolicy: Never
+#          resources:
+#            requests:
+#              cpu: "100m"
+#              memory: "128Mi"
+#            limits:
+#              cpu: "200m"
+#              memory: "256Mi"
+#          env:
+#            - name: JAVA_OPTS
+#              value: '-Xms128m -Xmx256m -XX:MaxMetaspaceSize=64m -Djdk.tls.client.protocols=TLSv1.2'
+#            - name: POD_IP
+#              valueFrom:
+#                fieldRef:
+#                  fieldPath: status.podIP
+#          ports:
+#            - containerPort: 5959

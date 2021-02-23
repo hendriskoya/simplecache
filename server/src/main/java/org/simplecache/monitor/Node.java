@@ -4,9 +4,9 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Instance {
+public class Node {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Instance.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Node.class);
 
     private final String hostname;
     private String ip;
@@ -21,7 +21,7 @@ public class Instance {
         }
     }
 
-    public Instance(String hostname, String ip, String status) {
+    public Node(String hostname, String ip, String status) {
         this.hostname = hostname;
         this.ip = ip;
         this.status = status;

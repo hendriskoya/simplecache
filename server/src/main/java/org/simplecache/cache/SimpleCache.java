@@ -1,6 +1,10 @@
 package org.simplecache.cache;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
@@ -18,7 +22,10 @@ public final class SimpleCache {
     public static final SimpleCache INSTANCE = new SimpleCache();
 
     private final CacheManager cacheManager;
-    private final Cache<String, String> cache;
+    private final Cache<String, CacheValue> cache;
+    private final SimpleCacheExpiry simpleCacheExpiry = new SimpleCacheExpiry();
+
+    private final Set<String> hashCodeValidator = new HashSet<>();
 
     public SimpleCache() {
 //        this.data = new HashMap<>();
@@ -33,8 +40,11 @@ public final class SimpleCache {
 //        Cache<Long, String> preConfigured = cacheManager.getCache("preConfigured", Long.class, String.class);
 
         cache = cacheManager.createCache("cache",
-                CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class,
-                        ResourcePoolsBuilder.heap(100)).build());
+                CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, CacheValue.class,
+                        ResourcePoolsBuilder.heap(100))
+                        .withExpiry(simpleCacheExpiry)
+//                        .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(20)))
+                        .build());
 
 //        cache.put(1L, "da one!");
 //        String value = cache.get(1L);
@@ -45,11 +55,14 @@ public final class SimpleCache {
         cacheManager.close();
     }
 
-    public void set(String key, String value) {
+    public void set(String key, CacheValue value) {
         cache.put(key, value);
+        //start - test
+        hashCodeValidator.add(key);
+        //end - test
     }
 
-    public String get(String key) {
+    public CacheValue get(String key) {
         return cache.get(key);
     }
 
@@ -65,7 +78,12 @@ public final class SimpleCache {
         return false;
     }
 
-    public Iterator<Cache.Entry<String, String>> data() {
+    public Iterator<Cache.Entry<String, CacheValue>> data() {
         return cache.iterator();
     }
+
+    public int cacheHashCode() {
+        return hashCodeValidator.hashCode();
+    }
 }
+

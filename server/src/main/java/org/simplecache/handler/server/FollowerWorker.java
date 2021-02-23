@@ -1,34 +1,44 @@
-package org.simplecache;
+package org.simplecache.handler.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.simplecache.Environment;
+import org.simplecache.Packet;
+import org.simplecache.PodInfo;
+import org.simplecache.cache.CacheProtocol;
+import org.simplecache.cache.CacheValue;
 import org.simplecache.cache.SimpleCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Client implements Runnable {
+public class FollowerWorker implements Runnable {
 
-    private final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private final Logger LOG = LoggerFactory.getLogger(FollowerWorker.class);
 
     private final String ip;
     private final Environment environment;
     private final AtomicBoolean stop = new AtomicBoolean(false);
     private final ObjectMapper objectMapper;
+    private boolean synced = false;
 
-
-    public Client(String ip) {
+    public FollowerWorker(String ip) {
         LOG.info("InstanceIp: {}", ip);
         Objects.requireNonNull(ip, "InstanceIp should be not null");
         this.ip = ip;
         this.environment = new Environment();
         this.objectMapper = new ObjectMapper();
+    }
+
+    public boolean isSynced() {
+        return synced;
     }
 
     @Override
@@ -85,7 +95,7 @@ public class Client implements Runnable {
                 LOG.info("request converted to object {}", request);*/
                 // request sent by instance handler - end
 
-                if (request.getCommand() != null && "IDENTIFICATION".equals(request.getCommand())) {
+                /*if (request.getCommand() != null && "IDENTIFICATION".equals(request.getCommand())) {
 
                     String message = request.getAttributes().get("message");
                     LOG.info(message);
@@ -99,7 +109,7 @@ public class Client implements Runnable {
                     packet.add("type", "CLIENT");
                     jsonResponse = objectMapper.writeValueAsString(packet);
 
-                    dos.writeUTF(jsonResponse);
+                    dos.writeUTF(jsonResponse);*/
 
                     // the following loop performs the exchange of
                     // information between client and client handler
@@ -114,14 +124,11 @@ public class Client implements Runnable {
 
                         /****************/
                         //aguardando o server passar atualização de cache
-                        String msgFromServer = dis.readUTF();
-                        LOG.info("Message from server: {}", msgFromServer);
+                        jsonRequest = dis.readUTF();
+                        request = Packet.fromJson(jsonRequest).orElseThrow(() -> new Exception("Invalid request"));
+                        LOG.info("Message from server: {}", jsonRequest);
 
-                        /**
-                         * código temporário (substituir por um protocolo)
-                         */
-                        String[] split = msgFromServer.split("=");
-                        SimpleCache.INSTANCE.set(split[0], split[1]);
+                        processPacket(request, dos);
 
                         // If client sends exit,close this connection
                         // and then break from the while loop
@@ -148,7 +155,7 @@ public class Client implements Runnable {
                     //            scn.close();
                     dis.close();
                     dos.close();
-                }
+//                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -164,11 +171,50 @@ public class Client implements Runnable {
         LOG.info("Exiting Thread");
     }
 
+    private void processPacket(Packet packet, DataOutputStream dos) {
+        String command = packet.getCommand();
+        switch (command) {
+            case "SET":
+                processSet(packet.getAttributes());
+                break;
+            case "SYNC_CONFIRMATION":
+                processSyncConfirmation(dos, packet.getAttributes());
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void processSyncConfirmation(DataOutputStream dos, Map<String, String> attributes) {
+        Integer hashCode = Integer.valueOf(attributes.get("hashCode"));
+        System.out.println("hashCode from server: " + hashCode);
+        System.out.println("hashCode from local: " + SimpleCache.INSTANCE.cacheHashCode());
+        this.synced = hashCode == SimpleCache.INSTANCE.cacheHashCode();
+        String syncConfirmationResponse = CacheProtocol.createSyncConfirmationResponse(synced);
+        try {
+            dos.writeUTF(syncConfirmationResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void processSet(Map<String, String> attributes) {
+        String key = attributes.get("key");
+        String value = attributes.get("value");
+        String ttl = attributes.get("ttl");
+
+        System.out.println("SET " + key + " - " + value + " - " + ttl);
+
+        CacheValue cacheValue = new CacheValue(value, ttl != null ? Duration.ofSeconds(Integer.valueOf(ttl)) : null);
+
+        SimpleCache.INSTANCE.set(key, cacheValue);
+    }
+
     public void doStop() {
         this.stop.set(true);
     }
 
-    public static void setCache(DataInputStream dis, DataOutputStream dos, String key, String value) {
+    /*public static void setCache(DataInputStream dis, DataOutputStream dos, String key, String value) {
         try {
             Packet packet = new Packet();
             packet.setCommand("SET");
@@ -201,5 +247,5 @@ public class Client implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 }

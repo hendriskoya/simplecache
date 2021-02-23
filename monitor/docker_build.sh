@@ -5,4 +5,4 @@ then
   .././gradlew clean build -xtest -xdistTar
 fi
 
-docker build -t monitor:latest .
+docker build -t monitorWorker:latest .

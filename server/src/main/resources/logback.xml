@@ -1,0 +1,19 @@
+<configuration scan="true" scanPeriod="1 minutes">
+
+    <property name="PATTERN_STR" value="%d %-5level [%thread] class:%c{0}: %msg%n"/>
+
+    <appender name="ROOT-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN_STR}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ROOT-CONSOLE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </root>
+
+</configuration>

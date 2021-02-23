@@ -1,122 +1,99 @@
 package org.simplecache.handler.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
-import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.ehcache.Cache;
-import org.simplecache.PodInfo;
-import org.simplecache.cache.SimpleCache;
+import java.time.format.DateTimeFormatter;
+import org.simplecache.ConnectionManager;
+import org.simplecache.Environment;
+import org.simplecache.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NodeHandler implements Runnable {
 
-    private final Logger LOG = LoggerFactory.getLogger(NodeHandler.class);
+    private final Logger LOG = LoggerFactory.getLogger(NodeWorker.class);
 
-    private final DataInputStream dis;
-    private final DataOutputStream dos;
-    private final Socket socket;
-    private final BlockingQueue<String> messages;
-    private final String hostname;
-    private final String ip;
-    private final LocalDateTime createdAt;
-    private final AtomicBoolean stop = new AtomicBoolean(false);
+    private final Environment environment;
+    private final ObjectMapper objectMapper;
+    private final ConnectionManager connectionManager;
 
-    public NodeHandler(Socket socket, DataInputStream dis, DataOutputStream dos, String hostname, String ip, LocalDateTime createdAt) {
-        this.socket = socket;
-        this.dis = dis;
-        this.dos = dos;
-        this.hostname = hostname;
-        this.ip = ip;
-        this.createdAt = createdAt;
-        this.messages = new LinkedBlockingQueue<>();
-    }
-
-    public void publish(String message) {
-        messages.offer(message);
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public String getIp() {
-        return ip;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public NodeHandler(Environment environment, ConnectionManager connectionManager) {
+        this.environment = environment;
+        this.connectionManager = connectionManager;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
     public void run() {
-        //node é mais velho que o nó que solicitou a conexão, portanto, será enviado uma cópia do cache
-        if (PodInfo.getCreatedAt().isBefore(createdAt)) {
-            LOG.info("Starting sync cache with host {}", hostname);
-            Iterator<Cache.Entry<String, String>> data = SimpleCache.INSTANCE.data();
-            while (data.hasNext()) {
-                Cache.Entry<String, String> next = data.next();
-                try {
-                    dos.writeUTF(next.getKey() + "=" + next.getValue());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            LOG.info("Sync cache is finished with host {}", hostname);
-        }
-
         try {
+            ServerSocket serverSocket = new ServerSocket(environment.getServerPort());
+            LOG.info("Listening on port {}", environment.getServerPort());
+
             while (true) {
+                LOG.info("Waiting new instance...");
+                Socket socket = null;
                 try {
-                    // aguardando receber mensagem de cache para enviar para os clientes
-                    String message = messages.poll(200, TimeUnit.MILLISECONDS);
-//                    LOG.info("Enviando mensagem para o cliente: {}", message);
+                    //                    waitingToBeReady();
 
-                    if (stop.get()) {
-                        LOG.info("Closing this connection: " + socket);
-                        break;
-                    }
+                    socket = serverSocket.accept();
 
-                    if (message != null) {
-                        dos.writeUTF(message);
-                    }
-                } catch (InterruptedException e) {
+                    // obtaining input and out streams
+                    DataInputStream dis = new DataInputStream(socket.getInputStream());
+                    DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+
+                    LOG.info("Assigning new thread for this instance");
+
+                    // send request to monitor/client - init
+                    Packet request = new Packet();
+                    request.setCommand("IDENTIFICATION");
+                    request.add("message", "Hi. Who are you?");
+                    String jsonRequest = objectMapper.writeValueAsString(request);
+                    LOG.info("jsonRequest: {}", jsonRequest);
+                    dos.writeUTF(jsonRequest);
+                    // send request to monitor/client - end
+
+                    // response from monitor/client - init
+                    String jsonResponse = dis.readUTF();
+                    LOG.info("jsonResponse: {}", jsonResponse);
+                    Packet response = Packet.fromJson(jsonResponse).orElseThrow(() -> new Exception("Invalid response"));
+
+                    String hostname = response.getAttributes().get("hostname");
+                    String ip = response.getAttributes().get("ip");
+                    LocalDateTime createdAt = LocalDateTime.parse(response.getAttributes().get("createdAt"), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    String type = response.getAttributes().get("type");
+
+                    LOG.info("response info: {}, {}, {}, {}", hostname, ip, createdAt, type);
+                    // response from monitor/client - end
+
+                    LOG.info("A new instance server is connected: {}", socket);
+                    String id = "server-" + ip;
+                    NodeWorker nodeWorker = new NodeWorker(socket, dis, dos, hostname, ip, createdAt);
+                    connectionManager.addNode(nodeWorker);
+                    Thread worker = new Thread(nodeWorker, id);
+
+                    // Invoking the start() method
+                    worker.start();
+
+                } catch (Exception e) {
                     e.printStackTrace();
+                    try {
+                        // O Close do socket deve ficar na exception porque não pode ser fechado após a execução da thread
+                        // já que esses objetos são utilizados por threads que continuam em execução
+                        if (socket != null) {
+                            socket.close();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         } catch (IOException e) {
-            LOG.error("Erro de IO na comunicação entre as instâncias do server", e);
+            e.printStackTrace();
         }
-
-        try {
-            // closing resources
-            this.dis.close();
-            this.dos.close();
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            LOG.error("Erro na tentativa de fechar o socket", e);
-        }
-    }
-
-    public void doStop() {
-        this.stop.set(true);
-    }
-
-    @Override
-    public String toString() {
-        return "InstanceHandler{" +
-                "hostname='" + hostname + '\'' +
-                ", ip='" + ip + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
     }
 }

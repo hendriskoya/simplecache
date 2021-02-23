@@ -1,5 +1,6 @@
 package org.simplecache;
 
+import java.io.IOException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +15,7 @@ public class Application {
     }
 
     @Bean
-    public CacheClient cacheClient() {
+    public CacheClient cacheClient() throws IOException {
         return new CacheClient();
     }
 }

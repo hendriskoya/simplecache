@@ -5,17 +5,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MessageQueue {
     
-    private final BlockingQueue<String> messages;
+    private final BlockingQueue<CacheEntry> messages;
 
     public MessageQueue() {
         messages = new LinkedBlockingQueue<>();
     }
 
-    public void offer(String message) {
+    public void offer(CacheEntry message) {
         messages.offer(message);
     }
 
-    public String take() throws InterruptedException {
+    public CacheEntry take() throws InterruptedException {
         return messages.take();
     }
 }

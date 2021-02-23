@@ -26,8 +26,13 @@ public class CacheClient implements DisposableBean {
     private DataInputStream dis;
     private DataOutputStream dos;
 
-    public CacheClient() {
+    public CacheClient() throws IOException {
+        establishConnection();
+    }
+
+    private void establishConnection() throws IOException {
         LOG.info("Trying connect to the simplecache ...");
+        closeResources();
         while (true) {
             try {
                 socket = new Socket(host, port);
@@ -42,19 +47,24 @@ public class CacheClient implements DisposableBean {
 
                 LOG.info("Connection to the simplecache is established");
                 break;
-            } catch (ConnectException e) {
+            /*} catch (ConnectException e) {
                 LOG.error(e.getMessage());
+                waitRetry();*/
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error(e.getMessage());
                 //            throw new RuntimeException("Não foi possível estabelecer conexão com o cache", e);
+                waitRetry();
             } catch (NodeIsNotReadyException e) {
                 LOG.error("SimpleCache is not ready to accept connections");
             }
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        }
+    }
+
+    private void waitRetry() {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -65,13 +75,17 @@ public class CacheClient implements DisposableBean {
         dos.writeUTF("Exit");
 
         // closing resources
+        closeResources();
+        LOG.info("Connection to the simplecache is closed");
+    }
+
+    private void closeResources() throws IOException {
         if (dos != null)
             dos.close();
         if (dis != null)
             dis.close();
         if (socket != null)
             socket.close();
-        LOG.info("Connection to the simplecache is closed");
     }
 
     public void set(String key, String value) {

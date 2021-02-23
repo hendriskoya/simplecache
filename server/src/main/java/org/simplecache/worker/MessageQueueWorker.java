@@ -1,5 +1,7 @@
-package org.simplecache;
+package org.simplecache.worker;
 
+import org.simplecache.ConnectionManager;
+import org.simplecache.cache.CacheEntry;
 import org.simplecache.cache.MessageQueue;
 
 public class MessageQueueWorker implements Runnable {
@@ -16,7 +18,7 @@ public class MessageQueueWorker implements Runnable {
     public void run() {
         while (true) {
             try {
-                String message = messageQueue.take();
+                CacheEntry message = messageQueue.take();
 
                 connectionManager.nodes().forEach(serverHandler -> serverHandler.publish(message));
 

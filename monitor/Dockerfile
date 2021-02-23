@@ -11,13 +11,13 @@ WORKDIR /opt
 # COPY entrypoint.sh entrypoint.sh
 # RUN chmod +x entrypoint.sh
 
-COPY build/distributions/monitor-*.zip monitor.zip
+COPY build/distributions/monitorWorker-*.zip monitorWorker.zip
 
-RUN unzip monitor.zip && \
+RUN unzip monitorWorker.zip && \
     rm -rf *.zip && \
-    mv monitor-* monitor
+    mv monitorWorker-* monitorWorker
 
 # ENTRYPOINT ["/opt/entrypoint.sh"]
 # CMD ["/bin/bash","entrypoint.sh"]
 
-CMD ["/bin/bash","monitor/bin/monitor"]
+CMD ["/bin/bash","monitorWorker/bin/monitorWorker"]
