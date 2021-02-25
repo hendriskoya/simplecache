@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import org.simplecache.cache.CacheProtocol;
@@ -132,6 +133,7 @@ public class ClientWorker implements Runnable {
                 Packet packetOut = new Packet();
                 packetOut.setCommand("GET_OUT");
                 packetOut.add("value", value);
+                System.out.println(packetOut);
                 ObjectMapper objectMapper = new ObjectMapper();
                 String output = objectMapper.writeValueAsString(packetOut);
                 dos.writeUTF(output);
@@ -145,17 +147,17 @@ public class ClientWorker implements Runnable {
     private String processGet(Map<String, String> attributes) {
         String key = attributes.get("key");
         CacheValue cacheValue = SimpleCache.INSTANCE.get(key);
-        return cacheValue.getValue();
+        return cacheValue != null ? cacheValue.getValue() : null;
     }
 
     private void processSet(Map<String, String> attributes) {
         String key = attributes.get("key");
         String value = attributes.get("value");
         String ttl = attributes.get("ttl");
-        CacheValue cacheValue = new CacheValue(value, ttl != null ? Duration.ofSeconds(Integer.valueOf(ttl)) : null);
 
-        SimpleCache.INSTANCE.set(key, cacheValue);
+        long exp = SimpleCache.INSTANCE.set(key, value, ttl).getExp();
 
-        messageQueue.offer(new CacheEntry(key, value));
+        messageQueue.offer(new CacheEntry(key, value, exp));
     }
+
 }

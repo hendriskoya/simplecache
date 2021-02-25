@@ -15,13 +15,16 @@ $ kubectl proxy --port=9090
 - (DONE) Implementar o uso de um cache como Caffeine ou EhCache
 - (DONE) Ter identificação de todas as instâncias e informações como hostname, ip, data de criação
 - (DONE) Quando uma instância cair interromper as threads dos outros nós
-- Controle pra saber se o nó pode receber requisições 
-- Logar a thread nos logs
-- Controle o TTL pelo tempo que falta. Se um key/value foi inserido no cache pra viver por 80 segundos e depois de 40 segundos
-  outra instância subiu, logo ocorreu a replicação, mas o novo nó deve saber que o key/value deve viver por 40 segundos e não mais os 80 iniciais
-- Verificar regra de replicação já que é possível ter uma chave e mesma sofrer atualização durante a replicação e mais antiga prevalecer (implementar um mecanismo para controlar por tempo) 
-- Quando uma nova instância foi adicionada ao cluster, deve fazer a replicação do cache com o novo nó
-- Implementar feature de TTL no cache
+- (DONE) Controle do TTL pelo tempo que falta. Se um key/value foi inserido no cache pra viver por 80 segundos e depois de 40 segundos
+         outra instância subiu, logo ocorreu a replicação, mas o novo nó deve saber que o key/value deve viver por 40 segundos e não mais os 80 iniciais
+- (DONE) Verificar regra de replicação já que é possível ter uma chave e mesma sofrer atualização durante a replicação e mais antiga prevalecer (implementar um mecanismo para controlar por tempo)
+         Incluir timestamp de criação pra saber quais keys são mais novas pra substituir ou não 
+- (DONE) Controle pra saber se o nó pode receber requisições
+- (DONE) Implementar feature de TTL no cache
+- (DONE) Logar a thread nos logs por linha
+- (DONE) Quando uma nova instância foi adicionada ao cluster, deve fazer a replicação do cache com o novo nó
+- Provavelmente com o modelo de sincronia implementado haverá problema de consistencia já que um nó poderá não ter a ultima atualização por questão de milisegundos 
+- Verificar se pode haver alguma problema de race condition no setCache e algum problema de concorrência com o getCache
 - Tratar queda de conexão do server para não gerar erro infinitamente no followerWorker
   - Tratamento no followerWorker para retentar quando o Server estiver fora
 - Implementar cluster

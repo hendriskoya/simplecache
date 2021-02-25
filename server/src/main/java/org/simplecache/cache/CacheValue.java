@@ -1,22 +1,30 @@
 package org.simplecache.cache;
 
-import java.time.Duration;
-
 public final class CacheValue {
 
     private final String value;
-    private final Duration ttl;
+    private final long exp;
+    private final long createdAt;
 
-    public CacheValue(String value, Duration ttl) {
+    public CacheValue(String value, long exp, long createdAt) {
         this.value = value;
-        this.ttl = ttl;
+        this.exp = exp;
+        this.createdAt = createdAt;
     }
+
+    public CacheValue(String value, long createdAt) {
+        this(value, -1, createdAt);
+   }
 
     public String getValue() {
         return value;
     }
 
-    public Duration getTtl() {
-        return ttl;
+    public long getExp() {
+        return exp;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
     }
 }

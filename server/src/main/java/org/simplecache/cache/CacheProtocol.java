@@ -16,6 +16,7 @@ public class CacheProtocol {
         packet.setCommand("SET");
         packet.add("key", cacheEntry.getKey());
         packet.add("value", cacheEntry.getValue());
+        packet.add("exp", String.valueOf(cacheEntry.getExp()));
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.writeValueAsString(packet);

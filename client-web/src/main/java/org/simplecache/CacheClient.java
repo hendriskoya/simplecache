@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +89,32 @@ public class CacheClient implements DisposableBean {
             dis.close();
         if (socket != null)
             socket.close();
+    }
+
+    public void set(String key, String value, Duration ttl) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        try {
+            Packet packet = new Packet();
+            packet.setCommand("SET");
+            packet.add("key", key);
+            packet.add("value", value);
+            if (ttl != null) {
+                packet.add("ttl", String.valueOf(ttl.toSeconds()));
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(packet);
+            dos.writeUTF(json);
+            String received = dis.readUTF();
+            LOG.info("Received after set: {}", received);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        stopWatch.stop();
+        LOG.info("set key={}, value={}, time={}", key, value, stopWatch.getTotalTimeMillis());
     }
 
     public void set(String key, String value) {

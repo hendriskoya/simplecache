@@ -4,16 +4,16 @@ public class CacheEntry {
 
     private final String key;
     private final String value;
-    private final String ttl;
+    private final long exp;
 
     public CacheEntry(String key, String value) {
-        this(key, value, null);
+        this(key, value, -1);
     }
 
-    public CacheEntry(String key, String value, String ttl) {
+    public CacheEntry(String key, String value, long exp) {
         this.key = key;
         this.value = value;
-        this.ttl = ttl;
+        this.exp = exp;
     }
 
     public String getKey() {
@@ -24,7 +24,7 @@ public class CacheEntry {
         return value;
     }
 
-    public String getTtl() {
-        return ttl;
+    public long getExp() {
+        return exp;
     }
 }

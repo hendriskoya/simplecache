@@ -1,5 +1,6 @@
 package org.simplecache;
 
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +23,13 @@ public class Controller {
     }
 
     @PostMapping
-    public ResponseEntity<String> set(@RequestParam("key") String key, @RequestParam("value") String value) {
+    public ResponseEntity<String> set(@RequestParam("key") String key, @RequestParam("value") String value, @RequestParam(value = "ttl", required = false) String ttl) {
         LOG.info("POST {} - {}", key, value);
-        cacheClient.set(key, value);
+        Duration duration = null;
+        if (ttl != null && !ttl.isBlank()) {
+            duration = Duration.ofSeconds(Long.valueOf(ttl));
+        }
+        cacheClient.set(key, value, duration);
         return ResponseEntity.ok(key + " - " + value);
     }
 

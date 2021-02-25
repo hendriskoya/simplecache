@@ -71,7 +71,7 @@ public class NodeWorker implements Runnable {
                     CacheValue cacheValue = next.getValue();
                     String jsonMessage = CacheProtocol.createSetCache(new CacheEntry(next.getKey(),
                             cacheValue.getValue(),
-                            String.valueOf(cacheValue.getTtl() != null ? next.getValue().getTtl().getSeconds() : null)));
+                            cacheValue.getExp()));
 
                     dos.writeUTF(jsonMessage);
                 } catch (IOException e) {

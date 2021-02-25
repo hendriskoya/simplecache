@@ -1,7 +1,7 @@
 package org.simplecache.cache;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -10,7 +10,6 @@ import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
-import org.simplecache.ConnectionManager;
 
 /**
  * Esse CACHE precisa ser concorrente já que várias conexões farão uso
@@ -23,7 +22,7 @@ public final class SimpleCache {
 
     private final CacheManager cacheManager;
     private final Cache<String, CacheValue> cache;
-    private final SimpleCacheExpiry simpleCacheExpiry = new SimpleCacheExpiry();
+    private final SimpleCacheExpiryPolicy simpleCacheExpiryPolicy = new SimpleCacheExpiryPolicy();
 
     private final Set<String> hashCodeValidator = new HashSet<>();
 
@@ -42,7 +41,7 @@ public final class SimpleCache {
         cache = cacheManager.createCache("cache",
                 CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, CacheValue.class,
                         ResourcePoolsBuilder.heap(100))
-                        .withExpiry(simpleCacheExpiry)
+                        .withExpiry(simpleCacheExpiryPolicy)
 //                        .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(20)))
                         .build());
 
@@ -55,27 +54,34 @@ public final class SimpleCache {
         cacheManager.close();
     }
 
-    public void set(String key, CacheValue value) {
-        cache.put(key, value);
-        //start - test
-        hashCodeValidator.add(key);
-        //end - test
+    public CacheValue set(String key, String value, String ttl) {
+        CacheValue cacheValue = SimpleCache.createCacheValue(value, ttl);
+
+        return setCache(key, cacheValue);
+    }
+
+    public CacheValue set(String key, CacheValue cacheValue) {
+        return setCache(key, cacheValue);
+    }
+
+    private CacheValue setCache(String key, CacheValue cacheValue) {
+        CacheValue storedCacheValue = cache.get(key);
+        long storedCreatedAt = -1;
+        if (storedCacheValue != null) {
+            storedCreatedAt = storedCacheValue.getCreatedAt();
+        }
+        if (cacheValue.getCreatedAt() > storedCreatedAt) {
+            cache.put(key, cacheValue);
+            //start - test
+            hashCodeValidator.add(key);
+            //end - test
+            return cacheValue;
+        }
+        return storedCacheValue;
     }
 
     public CacheValue get(String key) {
         return cache.get(key);
-    }
-
-    public boolean isSynchronized(ConnectionManager connectionManager) {
-        /*System.out.println("connectionManager: " + connectionManager);
-        if (connectionManager == null || connectionManager.nodes() == null || connectionManager.nodes().isEmpty()
-                || cache.containsKey("name")) {
-            return true;
-        } else {
-            //check if it was synchronized
-            return false;
-        }*/
-        return false;
     }
 
     public Iterator<Cache.Entry<String, CacheValue>> data() {
@@ -84,6 +90,26 @@ public final class SimpleCache {
 
     public int cacheHashCode() {
         return hashCodeValidator.hashCode();
+    }
+
+    public static CacheValue createCacheValue(String value, String ttl) {
+        long exp = -1;
+        if (ttl != null && !ttl.isBlank()) {
+            long ttlInMillis = Duration.ofSeconds(Integer.valueOf(ttl)).toMillis();
+            exp = Instant.now().plusMillis(ttlInMillis).toEpochMilli() / 1000;
+        }
+        long createdAt = Instant.now().toEpochMilli();
+        return new CacheValue(value, exp, createdAt);
+    }
+
+    public static CacheValue createCacheValue(String value) {
+        long createdAt = Instant.now().toEpochMilli();
+        return new CacheValue(value, createdAt);
+    }
+
+    public static CacheValue createCacheValue(String value, long exp) {
+        long createdAt = Instant.now().toEpochMilli();
+        return new CacheValue(value, exp, createdAt);
     }
 }
 

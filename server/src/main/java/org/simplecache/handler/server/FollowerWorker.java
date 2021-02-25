@@ -5,7 +5,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
@@ -201,11 +200,15 @@ public class FollowerWorker implements Runnable {
     private void processSet(Map<String, String> attributes) {
         String key = attributes.get("key");
         String value = attributes.get("value");
-        String ttl = attributes.get("ttl");
+        String exp = attributes.get("exp");
+        System.out.println("SET " + key + " - " + value + " - " + exp);
 
-        System.out.println("SET " + key + " - " + value + " - " + ttl);
-
-        CacheValue cacheValue = new CacheValue(value, ttl != null ? Duration.ofSeconds(Integer.valueOf(ttl)) : null);
+        CacheValue cacheValue;
+        if (exp != null && !exp.isBlank()) {
+            cacheValue = SimpleCache.createCacheValue(value, Long.valueOf(exp));
+        } else {
+            cacheValue = SimpleCache.createCacheValue(value);
+        }
 
         SimpleCache.INSTANCE.set(key, cacheValue);
     }
