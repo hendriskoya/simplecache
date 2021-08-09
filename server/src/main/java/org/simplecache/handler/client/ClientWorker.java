@@ -13,6 +13,7 @@ import java.util.Optional;
 import org.simplecache.cache.CacheProtocol;
 import org.simplecache.cache.CacheValue;
 import org.simplecache.cache.CacheEntry;
+import org.simplecache.cache.Publisher;
 import org.simplecache.cache.SimpleCache;
 import org.simplecache.Packet;
 import org.simplecache.cache.MessageQueue;
@@ -28,14 +29,16 @@ public class ClientWorker implements Runnable {
     private final DataInputStream dis;
     private final DataOutputStream dos;
     private final MessageQueue messageQueue;
+    private final Publisher publisher;
 //    private ConnectionManager connectionManager;
 
     // Constructor
-    public ClientWorker(Socket socket, DataInputStream dis, DataOutputStream dos, MessageQueue messageQueue) {
+    public ClientWorker(Socket socket, DataInputStream dis, DataOutputStream dos, MessageQueue messageQueue, Publisher publisher) {
         this.socket = socket;
         this.dis = dis;
         this.dos = dos;
         this.messageQueue = messageQueue;
+        this.publisher = publisher;
     }
 
     /*public void setConnectionManager(ConnectionManager connectionManager) {
@@ -154,10 +157,15 @@ public class ClientWorker implements Runnable {
         String key = attributes.get("key");
         String value = attributes.get("value");
         String ttl = attributes.get("ttl");
+        String ack = attributes.get("ack");
 
         long exp = SimpleCache.INSTANCE.set(key, value, ttl).getExp();
 
-        messageQueue.offer(new CacheEntry(key, value, exp));
+        CacheEntry cacheEntry = new CacheEntry(key, value, exp);
+        if (ack == null || ack.isBlank() || !ack.equalsIgnoreCase("all")) {
+            messageQueue.offer(cacheEntry);
+        } else {
+            publisher.publish(cacheEntry);
+        }
     }
-
 }

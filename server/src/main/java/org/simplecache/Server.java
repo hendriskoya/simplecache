@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import org.apache.commons.lang.time.StopWatch;
 import org.simplecache.cache.MessageQueue;
+import org.simplecache.cache.Publisher;
 import org.simplecache.cache.SimpleCache;
 import org.simplecache.handler.client.ClientHandler;
 import org.simplecache.handler.server.NodeHandler;
@@ -38,6 +39,8 @@ public class Server {
 
     private final Nodes nodes;
 
+    private final Publisher publisher;
+
     private final int nodesOnStartup;
 
     public Server() {
@@ -54,6 +57,7 @@ public class Server {
         k8sProxyApi = new CoreV1Api();
 
         this.nodes = new Nodes(connectionManager);
+        this.publisher = new Publisher(connectionManager);
         this.nodesOnStartup = checkForExistingNodes();
     }
 
@@ -96,7 +100,8 @@ public class Server {
     }
 
     private void startClientHandler() throws IOException {
-        ClientHandler clientHandler = new ClientHandler(environment, connectionManager, messageQueue, nodesOnStartup);
+        ClientHandler clientHandler = new ClientHandler(environment, connectionManager, messageQueue, publisher,
+                nodesOnStartup);
         clientHandler.start();
     }
 

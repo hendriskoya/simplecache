@@ -10,6 +10,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.ehcache.Cache;
 import org.simplecache.Packet;
 import org.simplecache.PodInfo;
@@ -32,6 +34,7 @@ public class NodeWorker implements Runnable {
     private final String ip;
     private final LocalDateTime createdAt;
     private final AtomicBoolean stop = new AtomicBoolean(false);
+    private final Lock lock = new ReentrantLock();
 
     public NodeWorker(Socket socket, DataInputStream dis, DataOutputStream dos, String hostname, String ip, LocalDateTime createdAt) {
         this.socket = socket;
@@ -43,8 +46,22 @@ public class NodeWorker implements Runnable {
         this.messages = new LinkedBlockingQueue<>();
     }
 
-    public void publish(CacheEntry message) {
+    public void publishAsync(CacheEntry message) {
         messages.offer(message);
+    }
+
+    private DataOutputStream getDos() {
+        lock.lock();
+        return dos;
+    }
+
+    public void publishSync(CacheEntry message) {
+        LOG.info("Sync publish of message");
+        try {
+            sendMessage(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String getHostname() {
@@ -113,8 +130,7 @@ public class NodeWorker implements Runnable {
                     }
 
                     if (message != null) {
-                        String jsonMessage = CacheProtocol.createSetCache(message);
-                        dos.writeUTF(jsonMessage);
+                        sendMessage(message);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -133,6 +149,15 @@ public class NodeWorker implements Runnable {
             }
         } catch (IOException e) {
             LOG.error("Erro na tentativa de fechar o socket", e);
+        }
+    }
+
+    private void sendMessage(CacheEntry message) throws IOException {
+        String jsonMessage = CacheProtocol.createSetCache(message);
+        try {
+            getDos().writeUTF(jsonMessage);
+        } finally {
+            lock.unlock();
         }
     }
 

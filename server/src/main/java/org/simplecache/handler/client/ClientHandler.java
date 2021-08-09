@@ -8,6 +8,7 @@ import java.net.Socket;
 import org.simplecache.ConnectionManager;
 import org.simplecache.Environment;
 import org.simplecache.cache.MessageQueue;
+import org.simplecache.cache.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,12 +19,15 @@ public class ClientHandler {
     private final Environment environment;
     private final ConnectionManager connectionManager;
     private final MessageQueue messageQueue;
+    private final Publisher publisher;
     private final int nodesOnStartup;
 
-    public ClientHandler(Environment environment, ConnectionManager connectionManager, MessageQueue messageQueue, int nodesOnStartup) {
+    public ClientHandler(Environment environment, ConnectionManager connectionManager, MessageQueue messageQueue,
+                         Publisher publisher, int nodesOnStartup) {
         this.environment = environment;
         this.connectionManager = connectionManager;
         this.messageQueue = messageQueue;
+        this.publisher = publisher;
         this.nodesOnStartup = nodesOnStartup;
     }
 
@@ -58,7 +62,7 @@ public class ClientHandler {
                 LOG.info("Assigning new thread for this client {}", socket);
 
                 String id = "client-" + client;
-                ClientWorker clientWorker = new ClientWorker(socket, dis, dos, messageQueue);
+                ClientWorker clientWorker = new ClientWorker(socket, dis, dos, messageQueue, publisher);
                 // create a new thread object
                 Thread t = new Thread(clientWorker, id);
                 client++;

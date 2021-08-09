@@ -59,6 +59,7 @@ public class CacheClient implements DisposableBean {
                 waitRetry();
             } catch (NodeIsNotReadyException e) {
                 LOG.error("SimpleCache is not ready to accept connections");
+                waitRetry();
             }
         }
     }
@@ -102,7 +103,7 @@ public class CacheClient implements DisposableBean {
             if (ttl != null) {
                 packet.add("ttl", String.valueOf(ttl.toSeconds()));
             }
-
+            packet.add("ack", "all");
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(packet);
             dos.writeUTF(json);

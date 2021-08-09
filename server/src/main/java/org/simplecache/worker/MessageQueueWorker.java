@@ -20,7 +20,7 @@ public class MessageQueueWorker implements Runnable {
             try {
                 CacheEntry message = messageQueue.take();
 
-                connectionManager.nodes().forEach(serverHandler -> serverHandler.publish(message));
+                connectionManager.nodes().forEach(serverHandler -> serverHandler.publishAsync(message));
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
